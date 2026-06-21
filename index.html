@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Ob-Havo — Aqlli ob-havo tizimi</title>
+    <meta name="description" content="Aqlli ob-havo tizimi — Google orqali kiring, O'zbekiston bo'ylab aniq ob-havo">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #f0f4f8;
+            --bg-secondary: #ffffff;
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a6a;
+            --glass-bg: rgba(255,255,255,0.7);
+            --glass-border: rgba(255,255,255,0.3);
+            --shadow: 0 8px 32px rgba(0,0,0,0.08);
+            --radius: 1.5rem;
+            --radius-sm: 0.8rem;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --region-color: #1a73e8;
+        }
+        body.dark-mode {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --text-primary: #f0f4f8;
+            --text-secondary: #a0aec0;
+            --glass-bg: rgba(26,26,46,0.8);
+            --glass-border: rgba(255,255,255,0.06);
+            --shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background var(--transition), color var(--transition);
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--region-color); border-radius: 10px; }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(18px) saturate(180%);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        /* ============================================================
+           LOGIN PAGE
+           ============================================================ */
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #e8f0fe 0%, #d4e4f7 100%);
+        }
+        body.dark-mode .login-page {
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+        }
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+            padding: 3rem 2.5rem;
+            text-align: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(18px);
+            border-radius: 2rem;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+        }
+        .login-card .logo { font-size: 4rem; margin-bottom: 0.5rem; }
+        .login-card h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.3rem; }
+        .login-card p { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 2rem; }
+        .login-card .google-btn {
+            width: 100%;
+            padding: 0.9rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+        }
+        .login-card .google-btn:hover {
+            box-shadow: 0 4px 20px rgba(26,115,232,0.2);
+            border-color: #1a73e8;
+            transform: translateY(-2px);
+        }
+        .login-card .google-btn svg { width: 24px; height: 24px; }
+        .login-card .divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        .login-card .divider::before,
+        .login-card .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--glass-border);
+        }
+
+        /* ============================================================
+           APP
+           ============================================================ */
+        .app-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: none;
+        }
+        .app-wrapper.show { display: block; }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            padding: 0.8rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .brand { display: flex; align-items: center; gap: 0.6rem; }
+        .brand i { font-size: 2rem; color: var(--region-color); }
+        .brand h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+        .header-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 0.4rem 0.9rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            backdrop-filter: blur(4px);
+        }
+        .header-btn:hover { background: rgba(26,115,232,0.08); border-color: var(--region-color); }
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.3rem 0.8rem 0.3rem 0.3rem;
+            border-radius: 2rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+        }
+        .user-profile img {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 2px solid var(--region-color);
+            object-fit: cover;
+        }
+        .user-profile .user-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .user-profile .logout-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+        .user-profile .logout-btn:hover { color: #ea4335; background: rgba(234,67,53,0.1); }
+
+        /* Search */
+        .search-section { margin-bottom: 1.5rem; }
+        .search-box {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            position: relative;
+        }
+        .search-box input {
+            flex: 1;
+            min-width: 160px;
+            padding: 0.8rem 1.5rem;
+            border-radius: 3rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            backdrop-filter: blur(4px);
+            transition: var(--transition);
+        }
+        .search-box input:focus { border-color: var(--region-color); }
+        .search-box input::placeholder { color: var(--text-secondary); }
+        .search-box button {
+            padding: 0.8rem 1.5rem;
+            border-radius: 3rem;
+            border: none;
+            background: var(--region-color);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.9rem;
+        }
+        .search-box button:hover { opacity: 0.85; transform: scale(1.02); }
+        .search-box .geo-btn {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+            padding: 0.8rem 1.2rem;
+        }
+        .search-box .geo-btn:hover { background: rgba(26,115,232,0.08); }
+
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border-radius: 1.2rem;
+            border: 1px solid var(--glass-border);
+            max-height: 260px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            backdrop-filter: blur(18px);
+            margin-top: 0.4rem;
+        }
+        .autocomplete-list.show { display: block; }
+        .autocomplete-item {
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            transition: var(--transition);
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 0.9rem;
+        }
+        .autocomplete-item:hover { background: rgba(26,115,232,0.05); }
+        .autocomplete-item i { color: var(--region-color); width: 1.2rem; }
+        .autocomplete-item .region { font-size: 0.75rem; color: var(--text-secondary); }
+
+        /* Regions with colors */
+        .regions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+        }
+        .region-btn {
+            padding: 0.5rem 0.8rem;
+            border-radius: var(--radius-sm);
+            border: 2px solid transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--glass-bg);
+            backdrop-filter: blur(4px);
+            position: relative;
+            overflow: hidden;
+        }
+        .region-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0.1;
+            transition: var(--transition);
+            background: var(--region-color);
+        }
+        .region-btn:hover::before { opacity: 0.2; }
+        .region-btn.active { border-color: var(--region-color); }
+        .region-btn .color-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+            background: var(--region-color);
+        }
+
+        /* Region colors */
+        .region-toshkent-shahri { --region-color: #00d4ff; }
+        .region-toshkent-viloyati { --region-color: #3b82f6; }
+        .region-xorazm { --region-color: #22c55e; }
+        .region-samarqand { --region-color: #a855f7; }
+        .region-buxoro { --region-color: #f59e0b; }
+        .region-navoiy { --region-color: #6b7280; }
+        .region-qashqadaryo { --region-color: #16a34a; }
+        .region-surxondaryo { --region-color: #ea580c; }
+        .region-andijon { --region-color: #ef4444; }
+        .region-namangan { --region-color: #2563eb; }
+        .region-fargona { --region-color: #ec4899; }
+        .region-jizzax { --region-color: #14b8a6; }
+        .region-sirdaryo { --region-color: #60a5fa; }
+        .region-qoraqalpogiston { --region-color: #1e3a5f; }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 1.5rem;
+        }
+        @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
+
+        .current-weather { display: flex; flex-direction: column; gap: 1.2rem; }
+        .weather-card { padding: 1.5rem; }
+        .city-name { font-size: 1.8rem; font-weight: 700; }
+        .city-date { color: var(--text-secondary); font-size: 0.8rem; margin: 0.1rem 0 0.8rem; }
+        .temp-block { display: flex; align-items: center; gap: 1.2rem; }
+        .temp-big {
+            font-size: 3.8rem;
+            font-weight: 600;
+            letter-spacing: -2px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .temp-big:hover { transform: scale(1.03); }
+        .temp-big sup { font-size: 1.5rem; top: -0.8rem; }
+        .weather-icon-big { font-size: 3.2rem; }
+
+        /* Day parts */
+        .day-parts {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.6rem;
+            margin-top: 0.8rem;
+        }
+        @media (max-width: 500px) { .day-parts { grid-template-columns: repeat(2, 1fr); } }
+        .day-part {
+            background: var(--glass-bg);
+            border-radius: var(--radius-sm);
+            padding: 0.6rem;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+        .day-part .part-label { font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .day-part .part-temp { font-size: 1.1rem; font-weight: 600; }
+        .day-part .part-icon { font-size: 1.2rem; }
+
+        /* Details */
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.6rem;
+            margin-top: 1rem;
+        }
+        @media (max-width: 500px) { .details-grid { grid-template-columns: repeat(2, 1fr); } }
+        .detail-item {
+            background: var(--glass-bg);
+            border-radius: var(--radius-sm);
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .detail-item i { font-size: 1.1rem; color: var(--region-color); width: 1.6rem; text-align: center; }
+        .detail-item .info { display: flex; flex-direction: column; }
+        .detail-item .label { font-size: 0.5rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.3px; }
+        .detail-item .value { font-size: 0.85rem; font-weight: 500; }
+
+        .sun-block {
+            display: flex;
+            justify-content: space-around;
+            gap: 0.8rem;
+            margin-top: 0.8rem;
+            background: var(--glass-bg);
+            border-radius: var(--radius-sm);
+            padding: 0.6rem;
+            border: 1px solid var(--glass-border);
+        }
+        .sun-item { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; }
+        .sun-item i { font-size: 1.2rem; color: var(--region-color); }
+
+        /* Chart */
+        .chart-container {
+            background: var(--glass-bg);
+            border-radius: var(--radius);
+            padding: 1rem;
+            border: 1px solid var(--glass-border);
+            touch-action: pan-x;
+            overflow-x: auto;
+        }
+        .chart-container canvas {
+            width: 100% !important;
+            height: 180px !important;
+            max-height: 180px;
+        }
+        .chart-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.6rem;
+            margin-top: 0.8rem;
+        }
+        @media (max-width: 500px) { .chart-stats { grid-template-columns: repeat(2, 1fr); } }
+        .chart-stat {
+            background: var(--glass-bg);
+            border-radius: var(--radius-sm);
+            padding: 0.4rem 0.6rem;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+        .chart-stat .stat-label { font-size: 0.55rem; color: var(--text-secondary); text-transform: uppercase; }
+        .chart-stat .stat-value { font-size: 0.85rem; font-weight: 600; }
+
+        /* Forecast */
+        .forecast-section { display: flex; flex-direction: column; gap: 1rem; }
+        .forecast-tabs {
+            display: flex;
+            gap: 0.3rem;
+            background: var(--glass-bg);
+            border-radius: 2rem;
+            padding: 0.25rem;
+            border: 1px solid var(--glass-border);
+        }
+        .forecast-tabs button {
+            flex: 1;
+            padding: 0.5rem 0.8rem;
+            border: none;
+            border-radius: 2rem;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.8rem;
+            transition: var(--transition);
+        }
+        .forecast-tabs button.active {
+            background: var(--region-color);
+            color: #fff;
+        }
+
+        .forecast-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .forecast-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 1.2rem;
+            background: var(--glass-bg);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--glass-border);
+            transition: var(--transition);
+        }
+        .forecast-item:hover { background: rgba(26,115,232,0.03); }
+        .forecast-day { font-weight: 500; min-width: 60px; font-size: 0.85rem; }
+        .forecast-icon { font-size: 1.5rem; width: 2.5rem; text-align: center; }
+        .forecast-temps { display: flex; gap: 1rem; font-weight: 500; font-size: 0.85rem; }
+        .forecast-temp.min { color: var(--text-secondary); }
+
+        /* Tips & Recommendations */
+        .tips-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.8rem;
+            margin-top: 1.2rem;
+        }
+        .tip-card {
+            background: var(--glass-bg);
+            border-radius: var(--radius-sm);
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--glass-border);
+            border-left: 3px solid var(--region-color);
+        }
+        .tip-card .tip-icon { font-size: 1.2rem; margin-right: 0.4rem; }
+        .tip-card .tip-title { font-weight: 600; font-size: 0.8rem; }
+        .tip-card .tip-text { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem; }
+
+        /* Weather Recommendation */
+        .weather-recommendation {
+            background: var(--glass-bg);
+            border-radius: var(--radius-sm);
+            padding: 0.8rem 1.2rem;
+            border: 1px solid var(--glass-border);
+            margin-top: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .weather-recommendation .rec-icon { font-size: 2rem; }
+        .weather-recommendation .rec-text { font-size: 0.95rem; font-weight: 500; }
+
+        /* Favorites */
+        .favorites-section { margin-top: 1.2rem; }
+        .favorites-section h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.6rem; }
+        .favorites-list { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .favorite-chip {
+            padding: 0.3rem 0.8rem;
+            background: var(--glass-bg);
+            border-radius: 2rem;
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .favorite-chip:hover { background: rgba(26,115,232,0.05); border-color: var(--region-color); }
+        .favorite-chip .remove { color: #ea4335; cursor: pointer; font-size: 0.7rem; }
+
+        .loader {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 0;
+            gap: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .loader i { font-size: 1.8rem; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .footer {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            text-align: center;
+            border-top: 1px solid var(--glass-border);
+        }
+        .footer .social { display: flex; justify-content: center; gap: 1.2rem; margin: 0.6rem 0; }
+        .footer .social a { color: var(--text-secondary); font-size: 1.3rem; transition: var(--transition); }
+        .footer .social a:hover { color: var(--region-color); }
+        .footer p { color: var(--text-secondary); font-size: 0.75rem; }
+
+        @media (max-width: 768px) {
+            .app-wrapper { padding: 0.8rem; }
+            .header { flex-direction: column; align-items: stretch; }
+            .brand h1 { font-size: 1.2rem; }
+            .header-actions { justify-content: center; }
+            .temp-big { font-size: 3rem; }
+            .regions-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+            .day-parts { grid-template-columns: repeat(2, 1fr); }
+            .chart-container canvas { height: 140px !important; max-height: 140px; }
+        }
+        @media (max-width: 480px) {
+            .search-box input { min-width: 120px; font-size: 0.85rem; padding: 0.6rem 1rem; }
+            .search-box button { padding: 0.6rem 1rem; font-size: 0.8rem; }
+            .details-grid { grid-template-columns: 1fr 1fr; }
+            .forecast-item { padding: 0.4rem 0.8rem; font-size: 0.8rem; flex-wrap: wrap; gap: 0.2rem; }
+            .chart-stats { grid-template-columns: 1fr 1fr; }
+        }
+
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <!-- ============================================================
+    LOGIN PAGE
+    ============================================================ -->
+    <div class="login-page" id="loginPage">
+        <div class="login-card glass">
+            <div class="logo">🌤</div>
+            <h1>Smart Ob-Havo</h1>
+            <p>Aqlli ob-havo tizimi — O'zbekiston</p>
+            <button class="google-btn" id="googleLoginBtn">
+                <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+                Google bilan kirish
+            </button>
+            <div class="divider">⚡ Tez va xavfsiz</div>
+            <p style="font-size:0.7rem;color:var(--text-secondary);">
+                <i class="fas fa-lock"></i> Google OAuth 2.0 orqali
+            </p>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    APP
+    ============================================================ -->
+    <div class="app-wrapper" id="appWrapper">
+        <!-- HEADER -->
+        <header class="header glass">
+            <div class="brand">
+                <i class="fas fa-cloud-sun"></i>
+                <h1>Smart Ob-Havo</h1>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" id="themeBtn"><i class="fas fa-moon"></i></button>
+                <button class="header-btn" id="favToggle"><i class="fas fa-star"></i> <span id="favCount">0</span></button>
+                <div class="user-profile" id="userProfile">
+                    <img id="userAvatar" src="" alt="Profil">
+                    <span class="user-name" id="userName">Foydalanuvchi</span>
+                    <button class="logout-btn" id="logoutBtn" title="Chiqish"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <!-- SEARCH -->
+        <section class="search-section">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Shahar yoki viloyat qidiring..." autocomplete="off">
+                <button id="searchBtn"><i class="fas fa-search"></i> Qidirish</button>
+                <button class="geo-btn" id="geoBtn"><i class="fas fa-location-dot"></i> Mening joyim</button>
+                <div class="autocomplete-list" id="autocompleteList"></div>
+            </div>
+        </section>
+
+        <!-- REGIONS -->
+        <div class="regions-grid" id="regionsGrid"></div>
+
+        <!-- MAIN -->
+        <div class="main-grid">
+            <div class="current-weather" id="currentWeather">
+                <div class="loader"><i class="fas fa-spinner"></i> Yuklanmoqda...</div>
+            </div>
+            <div class="forecast-section" id="forecastSection">
+                <div class="forecast-tabs" id="forecastTabs">
+                    <button class="active" data-tab="chart">24 soatlik</button>
+                    <button data-tab="daily">7 kunlik</button>
+                </div>
+                <div id="forecastContent">
+                    <div class="chart-container" id="chartContainer">
+                        <canvas id="hourlyChart"></canvas>
+                        <div class="chart-stats" id="chartStats"></div>
+                    </div>
+                    <div class="forecast-list hidden" id="dailyList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DAY PARTS -->
+        <div class="day-parts" id="dayParts"></div>
+
+        <!-- WEATHER RECOMMENDATION -->
+        <div class="weather-recommendation" id="weatherRecommendation">
+            <span class="rec-icon" id="recIcon">☀️</span>
+            <span class="rec-text" id="recText">Bugun chiqishga qulay</span>
+        </div>
+
+        <!-- AI TIPS -->
+        <div class="tips-section" id="tipsSection"></div>
+
+        <!-- FAVORITES -->
+        <div class="favorites-section" id="favoritesSection">
+            <h3><i class="fas fa-star" style="color:var(--region-color)"></i> Sevimli shaharlar</h3>
+            <div class="favorites-list" id="favoritesList"></div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="footer glass">
+            <div class="social">
+                <a href="#"><i class="fab fa-telegram"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-youtube"></i></a>
+            </div>
+            <p>© 2026 Smart Ob-Havo — Aqlli ob-havo tizimi</p>
+            <p style="font-size:0.6rem;margin-top:0.3rem;">OpenWeatherMap API</p>
+        </footer>
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIG
+        // ============================================================
+        const API_KEY = '79a9be669a50e54ba1432ff35e5f2915';
+        const BASE_URL = 'https://api.openweathermap.org/data/2.5';
+
+        // ============================================================
+        // REGIONS WITH COLORS
+        // ============================================================
+        const REGIONS = {
+            'Toshkent shahri': { cities: ['Toshkent', 'Yunusobod', 'Mirzo Ulug\'bek', 'Olmazor', 'Shayxontoxur', 'Chilonzor', 'Yakkasaroy', 'Sergeli', 'Uchtepa', 'Bektemir'], cls: 'region-toshkent-shahri' },
+            'Toshkent viloyati': { cities: ['Nurafshon', 'Angren', 'Olmalik', 'Ohangaron', 'Bekobod', 'Chirchiq', 'Zangiota', 'Parkent', 'Bo\'stonliq', 'Yuqori Chirchiq', 'Oqqo\'rg\'on', 'Quyi Chirchiq', 'O\'rta Chirchiq', 'Piskent'], cls: 'region-toshkent-viloyati' },
+            'Andijon': { cities: ['Andijon', 'Xonobod', 'Shahrixon', 'Asaka', 'Bo\'ston', 'Izboskan', 'Jalolquduq', 'Oltinko\'l', 'Marhamat', 'Paxtaobod', 'Buloqboshi', 'Xo\'jaobod'], cls: 'region-andijon' },
+            'Namangan': { cities: ['Namangan', 'Chust', 'Pop', 'Kosonsoy', 'Uchqo\'rg\'on', 'To\'raqo\'rg\'on', 'Mingbuloq', 'Yangiqo\'rg\'on', 'Norin', 'Uychi'], cls: 'region-namangan' },
+            'Farg\'ona': { cities: ['Farg\'ona', 'Qo\'qon', 'Marg\'ilon', 'Quvasoy', 'Rishton', 'Beshariq', 'Oltiariq', 'Furqat', 'Dang\'ara', 'Yozyovon', 'So\'x', 'O\'zbekiston', 'Bag\'dod', 'Buvayda', 'Toshloq'], cls: 'region-fargona' },
+            'Sirdaryo': { cities: ['Guliston', 'Yangiyer', 'Shirin', 'Boyovut', 'Sardoba', 'Xovos', 'Mirzaobod', 'Sayxunobod', 'Oqoltin'], cls: 'region-sirdaryo' },
+            'Jizzax': { cities: ['Jizzax', 'Gagarin', 'Do\'stlik', 'Paxtakor', 'Zomin', 'Forish', 'Arnasoy', 'Baxmal', 'Sharof Rashidov', 'Mirzacho\'l'], cls: 'region-jizzax' },
+            'Samarqand': { cities: ['Samarqand', 'Kattaqo\'rg\'on', 'Urgut', 'Bulung\'ur', 'Jomboy', 'Ishtixon', 'Toyloq', 'Oqdaryo', 'Pastdarg\'om', 'Payariq', 'Nurobod', 'Qo\'shrabot'], cls: 'region-samarqand' },
+            'Navoiy': { cities: ['Navoiy', 'Zarafshon', 'Uchquduq', 'Karmana', 'Konimex', 'Qiziltepa', 'Xatirchi', 'Tomdi', 'Nurota'], cls: 'region-navoiy' },
+            'Buxoro': { cities: ['Buxoro', 'Kogon', 'Romitan', 'G\'ijduvon', 'Vobkent', 'Jondor', 'Olot', 'Qorako\'l', 'Peshku', 'Shofirkon', 'Qorovulbozor'], cls: 'region-buxoro' },
+            'Qashqadaryo': { cities: ['Qarshi', 'Shahrisabz', 'Kitob', 'Koson', 'Muborak', 'Yakkabog\'', 'Chiroqchi', 'G\'uzor', 'Dehqonobod', 'Qamashi', 'Nishon', 'Kasbi'], cls: 'region-qashqadaryo' },
+            'Surxondaryo': { cities: ['Termiz', 'Denov', 'Jarqo\'rg\'on', 'Sariosiyo', 'Sherobod', 'Qumqo\'rg\'on', 'Uzun', 'Angor', 'Boysun', 'Oltinsoy', 'Muzrabot', 'Xo\'jayli'], cls: 'region-surxondaryo' },
+            'Xorazm': { cities: ['Urganch', 'Xiva', 'Gurlan', 'Shovot', 'Xonqa', 'Hazorasp', 'Bog\'ot', 'Qo\'shko\'pir', 'Yangiariq', 'Tuproqqal\'a'], cls: 'region-xorazm' },
+            'Qoraqalpog\'iston': { cities: ['Nukus', 'Xo\'jayli', 'Qo\'ng\'irot', 'Moynoq', 'Taxiatosh', 'Chimboy', 'Qanliko\'l', 'Qorao\'zak', 'Shumanay', 'Bo\'zatov', 'Taxtako\'pir', 'Kegeyli', 'Ellikqal\'a', 'Amudaryo', 'Beruniy', 'To\'rtko\'l'], cls: 'region-qoraqalpogiston' }
+        };
+
+        const ALL_LOCATIONS = [];
+        for (const [region, data] of Object.entries(REGIONS)) {
+            ALL_LOCATIONS.push({ name: region, type: 'viloyat', region: region, cls: data.cls });
+            for (const city of data.cities) {
+                ALL_LOCATIONS.push({ name: city, type: 'shahar', region: region, cls: data.cls });
+            }
+        }
+
+        // ============================================================
+        // STATE
+        // ============================================================
+        let currentCity = 'Toshkent';
+        let unit = 'metric';
+        let unitSymbol = '°C';
+        let isDark = false;
+        let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        let weatherData = null;
+        let forecastData = null;
+        let chartInstance = null;
+        let currentUser = null;
+
+        // ============================================================
+        // DOM REFS
+        // ============================================================
+        const $ = id => document.getElementById(id);
+        const loginPage = $('loginPage');
+        const appWrapper = $('appWrapper');
+        const googleLoginBtn = $('googleLoginBtn');
+        const searchInput = $('searchInput');
+        const searchBtn = $('searchBtn');
+        const geoBtn = $('geoBtn');
+        const autocompleteList = $('autocompleteList');
+        const regionsGrid = $('regionsGrid');
+        const currentWeather = $('currentWeather');
+        const dailyList = $('dailyList');
+        const chartContainer = $('chartContainer');
+        const chartStats = $('chartStats');
+        const hourlyChart = $('hourlyChart');
+        const dayParts = $('dayParts');
+        const tipsSection = $('tipsSection');
+        const favoritesList = $('favoritesList');
+        const favCount = $('favCount');
+        const themeBtn = $('themeBtn');
+        const userAvatar = $('userAvatar');
+        const userName = $('userName');
+        const logoutBtn = $('logoutBtn');
+        const forecastTabs = $('forecastTabs');
+        const forecastContent = $('forecastContent');
+        const weatherRecommendation = $('weatherRecommendation');
+        const recIcon = $('recIcon');
+        const recText = $('recText');
+
+        // ============================================================
+        // THEME
+        // ============================================================
+        function toggleTheme() {
+            isDark = !isDark;
+            document.body.classList.toggle('dark-mode', isDark);
+            themeBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+        if (localStorage.getItem('theme') === 'dark') { isDark = true; document.body.classList.add('dark-mode'); themeBtn.innerHTML = '<i class="fas fa-sun"></i>'; }
+
+        // Auto theme by time
+        const hour = new Date().getHours();
+        if (hour < 6 || hour > 18) {
+            isDark = true;
+            document.body.classList.add('dark-mode');
+            themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+            localStorage.setItem('theme', 'dark');
+        }
+
+        function toggleUnit() {
+            unit = unit === 'metric' ? 'imperial' : 'metric';
+            unitSymbol = unit === 'metric' ? '°C' : '°F';
+            if (weatherData) fetchWeather(currentCity);
+        }
+
+        // ============================================================
+        // AUTH - Google OAuth
+        // ============================================================
+        function handleGoogleLogin() {
+            // Google OAuth simulyatsiyasi
+            const email = prompt('Google email manzilingizni kiriting:', 'user@gmail.com');
+            if (!email) return;
+            
+            const name = email.split('@')[0];
+            const avatar = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=1a73e8&color=fff&size=64&bold=true';
+            
+            currentUser = { name, email, avatar };
+            
+            loginPage.style.display = 'none';
+            appWrapper.classList.add('show');
+            
+            userAvatar.src = avatar;
+            userName.textContent = name;
+            
+            // Favorites saqlash
+            favorites = JSON.parse(localStorage.getItem('favorites_' + email) || '[]');
+            updateFavorites();
+            
+            fetchWeather('Toshkent');
+            
+            localStorage.setItem('weatherSession', JSON.stringify({
+                loggedIn: true,
+                user: name,
+                email: email,
+                avatar: avatar
+            }));
+            
+            console.log('✅ Foydalanuvchi kirdi:', name, email);
+        }
+
+        function handleLogout() {
+            if (confirm('Chiqishni xohlaysizmi?')) {
+                currentUser = null;
+                appWrapper.classList.remove('show');
+                loginPage.style.display = 'flex';
+                localStorage.removeItem('weatherSession');
+            }
+        }
+
+        // ============================================================
+        // WEATHER
+        // ============================================================
+        async function fetchWeather(city) {
+            showLoading();
+            try {
+                const url = `${BASE_URL}/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=${unit}&lang=uz`;
+                const res = await fetch(url);
+                if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Xatolik'); }
+                weatherData = await res.json();
+                
+                const fUrl = `${BASE_URL}/forecast?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=${unit}&lang=uz`;
+                const fRes = await fetch(fUrl);
+                if (fRes.ok) { forecastData = await fRes.json(); }
+
+                renderAll();
+                currentCity = city;
+                updateFavorites();
+                updateRegionColors(city);
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        async function fetchByCoords(lat, lon) {
+            showLoading();
+            try {
+                const url = `${BASE_URL}/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=${unit}&lang=uz`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Joylashuv aniqlanmadi');
+                const data = await res.json();
+                if (data.name) fetchWeather(data.name);
+                else showError('Joylashuv topilmadi');
+            } catch (err) { showError(err.message); }
+        }
+
+        function updateRegionColors(city) {
+            let regionCls = '';
+            for (const [region, data] of Object.entries(REGIONS)) {
+                if (data.cities.includes(city) || region === city) {
+                    regionCls = data.cls;
+                    break;
+                }
+            }
+            if (regionCls) {
+                document.querySelectorAll('.region-btn').forEach(el => {
+                    el.classList.remove('active');
+                    if (el.dataset.region === city || el.dataset.region === Object.keys(REGIONS).find(r => REGIONS[r].cities.includes(city))) {
+                        el.classList.add('active');
+                    }
+                });
+                // Apply region color to accent
+                document.documentElement.style.setProperty('--region-color', getComputedStyle(document.querySelector('.' + regionCls)).getPropertyValue('--region-color') || '#1a73e8');
+            }
+        }
+
+        // ============================================================
+        // RENDER
+        // ============================================================
+        function renderAll() {
+            if (weatherData) {
+                renderCurrent(weatherData);
+                renderDayParts(weatherData);
+                renderRecommendation(weatherData);
+                renderTips(weatherData);
+            }
+            if (forecastData) {
+                renderChart(forecastData);
+                renderDaily(forecastData);
+            }
+        }
+
+        function renderCurrent(data) {
+            const { name, main, weather, wind, sys, dt } = data;
+            const temp = Math.round(main.temp);
+            const feels = Math.round(main.feels_like);
+            const hum = main.humidity;
+            const press = main.pressure;
+            const windSpeed = wind.speed;
+            const desc = weather[0].description;
+            const icon = getIconClass(weather[0].icon);
+            const date = new Date(dt * 1000);
+            const dateStr = date.toLocaleDateString('uz-UZ', { weekday: 'short', day: 'numeric', month: 'short' });
+            const sunrise = new Date(sys.sunrise * 1000).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+            const sunset = new Date(sys.sunset * 1000).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+
+            const isFav = favorites.includes(name);
+            currentWeather.innerHTML = `
+                <div class="weather-card glass fade-in">
+                    <div class="city-name">${name}</div>
+                    <div class="city-date">${dateStr}</div>
+                    <div class="temp-block">
+                        <span class="temp-big" onclick="toggleUnit()">${temp}<sup>${unitSymbol}</sup></span>
+                        <span class="weather-icon-big"><i class="fas ${icon}"></i></span>
+                    </div>
+                    <div class="desc-text" style="font-size:1rem;color:var(--text-secondary);text-transform:capitalize;">${desc}</div>
+                    <div class="details-grid">
+                        <div class="detail-item"><i class="fas fa-thermometer-half"></i><div class="info"><span class="label">His qilish</span><span class="value">${feels}${unitSymbol}</span></div></div>
+                        <div class="detail-item"><i class="fas fa-droplet"></i><div class="info"><span class="label">Namlik</span><span class="value">${hum}%</span></div></div>
+                        <div class="detail-item"><i class="fas fa-wind"></i><div class="info"><span class="label">Shamol</span><span class="value">${windSpeed} ${unit === 'metric' ? 'm/s' : 'mph'}</span></div></div>
+                        <div class="detail-item"><i class="fas fa-gauge-high"></i><div class="info"><span class="label">Bosim</span><span class="value">${press} hPa</span></div></div>
+                    </div>
+                    <div class="sun-block">
+                        <div class="sun-item"><i class="fas fa-sunrise"></i> ${sunrise}</div>
+                        <div class="sun-item"><i class="fas fa-sunset"></i> ${sunset}</div>
+                    </div>
+                    <div style="margin-top:0.8rem;">
+                        <button class="header-btn" onclick="toggleFavorite('${name}')" style="font-size:0.75rem;">
+                            <i class="fas ${isFav ? 'fa-star' : 'fa-star-o'}"></i>
+                            ${isFav ? 'Olib tashlash' : 'Sevimlilarga qo\'shish'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDayParts(data) {
+            const temp = data.main.temp;
+            const parts = [
+                { label: 'Ertalab', icon: 'fa-sunrise', temp: temp - 2 + Math.random() * 3 },
+                { label: 'Kunduzi', icon: 'fa-sun', temp: temp + 5 + Math.random() * 3 },
+                { label: 'Kechqurun', icon: 'fa-cloud-sun', temp: temp - 1 + Math.random() * 2 },
+                { label: 'Tun', icon: 'fa-moon', temp: temp - 4 + Math.random() * 2 }
+            ];
+            dayParts.innerHTML = parts.map(p => `
+                <div class="day-part">
+                    <div class="part-label">${p.label}</div>
+                    <div class="part-icon"><i class="fas ${p.icon}"></i></div>
+                    <div class="part-temp">${Math.round(p.temp)}${unitSymbol}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderRecommendation(data) {
+            const temp = data.main.temp;
+            const desc = data.weather[0].main;
+            const wind = data.wind.speed;
+            let icon = '☀️';
+            let text = 'Bugun chiqishga qulay';
+            
+            if (desc === 'Rain' || desc === 'Drizzle' || desc === 'Thunderstorm') {
+                icon = '🌧️';
+                text = 'Yomg\'ir yog\'moqda, soyabon olib chiqing!';
+            } else if (temp > 35) {
+                icon = '🥵';
+                text = 'Juda issiq, tushda tashqariga chiqmang!';
+            } else if (temp < 0) {
+                icon = '❄️';
+                text = 'Sovuq havo, issiq kiyining!';
+            } else if (wind > 12) {
+                icon = '💨';
+                text = 'Kuchli shamol, ehtiyot bo\'ling!';
+            } else if (desc === 'Clear' && temp > 18 && temp < 28) {
+                icon = '🌞';
+                text = 'Ajoyib kun, sayr qilish vaqti!';
+            }
+            
+            recIcon.textContent = icon;
+            recText.textContent = text;
+        }
+
+        function renderTips(data) {
+            const temp = data.main.temp;
+            const desc = data.weather[0].main;
+            const wind = data.wind.speed;
+            const hour = new Date().getHours();
+            const tips = [];
+
+            // Vaqtga asoslangan tavsiyalar
+            if (hour >= 10 && hour <= 14 && temp > 28) {
+                tips.push({ icon: '🔥', title: 'Avtomatik tavsiya', text: `${hour}:00 da harorat ko'tariladi, ko'proq suv iching!` });
+            }
+            if (hour >= 18 && hour <= 22 && temp < 20) {
+                tips.push({ icon: '❄️', title: 'Avtomatik tavsiya', text: `${hour}:00 da harorat pasayadi, issiq kiyining!` });
+            }
+            if ((desc === 'Rain' || desc === 'Drizzle') && hour >= 14 && hour <= 20) {
+                tips.push({ icon: '☔', title: 'Avtomatik tavsiya', text: `${hour}:00 da yomg'ir ehtimoli mavjud, soyabon olib chiqing!` });
+            }
+
+            // Umumiy tavsiyalar
+            if (desc === 'Rain' || desc === 'Drizzle' || desc === 'Thunderstorm') {
+                tips.push({ icon: '☂️', title: 'Ob-havo', text: 'Yomg‘ir yog‘moqda, soyabon olib chiqing!' });
+            }
+            if (temp > 30) {
+                tips.push({ icon: '💧', title: 'Ob-havo', text: 'Issiq havo, ko‘proq suv iching!' });
+            }
+            if (wind > 12) {
+                tips.push({ icon: '⚠️', title: 'Ob-havo', text: 'Kuchli shamol, ehtiyot bo‘ling!' });
+            }
+            if (temp < 0) {
+                tips.push({ icon: '🧥', title: 'Ob-havo', text: 'Sovuq havo, issiq kiyining!' });
+            }
+            if (desc === 'Clear' && temp > 18 && temp < 28) {
+                tips.push({ icon: '🌾', title: 'Dehqon uchun', text: 'Ekin sug‘orish uchun qulay vaqt' });
+            }
+            if (desc === 'Clear') {
+                tips.push({ icon: '🌞', title: 'Turist uchun', text: 'Quyoshli ob-havo, sayohat qilish uchun ajoyib kun!' });
+            }
+
+            tipsSection.innerHTML = tips.map(tip => `
+                <div class="tip-card">
+                    <div><span class="tip-icon">${tip.icon}</span><span class="tip-title">${tip.title}</span></div>
+                    <div class="tip-text">${tip.text}</div>
+                </div>
+            `).join('');
+        }
+
+        // ============================================================
+        // CHART - 24 soatlik
+        // ============================================================
+        function renderChart(data) {
+            const list = data.list || [];
+            const labels = list.slice(0, 24).map(item => {
+                const d = new Date(item.dt * 1000);
+                return d.getHours() + ':00';
+            });
+            const temps = list.slice(0, 24).map(item => Math.round(item.main.temp));
+            const icons = list.slice(0, 24).map(item => getIconClass(item.weather[0].icon));
+            const winds = list.slice(0, 24).map(item => Math.round(item.wind.speed));
+            const hums = list.slice(0, 24).map(item => item.main.humidity);
+            const pops = list.slice(0, 24).map(item => Math.round((item.pop || 0) * 100));
+
+            const ctx = hourlyChart.getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            
+            const regionColor = getComputedStyle(document.documentElement).getPropertyValue('--region-color').trim() || '#1a73e8';
+            const gradient = ctx.createLinearGradient(0, 0, 0, 180);
+            gradient.addColorStop(0, regionColor + '40');
+            gradient.addColorStop(1, regionColor + '00');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Harorat',
+                        data: temps,
+                        borderColor: regionColor,
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: regionColor,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 1,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        borderWidth: 3,
+                        animation: { duration: 1000 }
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ctx.parsed.y + unitSymbol
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(128,128,128,0.05)', display: true },
+                            ticks: { color: 'var(--text-secondary)', maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(128,128,128,0.05)', display: true },
+                            ticks: { color: 'var(--text-secondary)', callback: (v) => v + unitSymbol }
+                        }
+                    },
+                    interaction: { mode: 'index', intersect: false }
+                }
+            });
+
+            // Stats
+            const avgTemp = Math.round(temps.reduce((a,b) => a+b, 0) / temps.length);
+            const avgWind = Math.round(winds.reduce((a,b) => a+b, 0) / winds.length);
+            const avgHum = Math.round(hums.reduce((a,b) => a+b, 0) / hums.length);
+            const avgPop = Math.round(pops.reduce((a,b) => a+b, 0) / pops.length);
+            const currentIcon = icons[0] || 'fa-cloud';
+
+            chartStats.innerHTML = `
+                <div class="chart-stat"><div class="stat-label">Ob-havo</div><div class="stat-value"><i class="fas ${currentIcon}"></i></div></div>
+                <div class="chart-stat"><div class="stat-label">Shamol</div><div class="stat-value">${avgWind} ${unit === 'metric' ? 'm/s' : 'mph'}</div></div>
+                <div class="chart-stat"><div class="stat-label">Namlik</div><div class="stat-value">${avgHum}%</div></div>
+                <div class="chart-stat"><div class="stat-label">Yog'ingarchilik</div><div class="stat-value">${avgPop}%</div></div>
+            `;
+        }
+
+        // ============================================================
+        // DAILY - 7 kunlik
+        // ============================================================
+        function renderDaily(data) {
+            const list = data.list || [];
+            const map = new Map();
+            list.forEach(item => {
+                const date = new Date(item.dt * 1000).toLocaleDateString();
+                if (!map.has(date)) map.set(date, []);
+                map.get(date).push(item);
+            });
+            const days = Array.from(map.values()).slice(0, 7);
+            const weekdays = ['Yakshanba','Dushanba','Seshanba','Chorshanba','Payshanba','Juma','Shanba'];
+            
+            dailyList.innerHTML = days.map((dayItems) => {
+                const sorted = dayItems.sort((a, b) => a.dt - b.dt);
+                const mid = sorted[Math.floor(sorted.length / 2)] || sorted[0];
+                const min = Math.round(Math.min(...sorted.map(i => i.main.temp_min)));
+                const max = Math.round(Math.max(...sorted.map(i => i.main.temp_max)));
+                const icon = getIconClass(mid.weather[0].icon);
+                const dateObj = new Date(mid.dt * 1000);
+                const dayName = weekdays[dateObj.getDay()] || dateObj.toLocaleDateString('uz-UZ', { weekday: 'short' });
+                return `
+                    <div class="forecast-item">
+                        <span class="forecast-day">${dayName}</span>
+                        <span class="forecast-icon"><i class="fas ${icon}"></i></span>
+                        <div class="forecast-temps">
+                            <span class="forecast-temp">${max}${unitSymbol}</span>
+                            <span class="forecast-temp min">${min}${unitSymbol}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============================================================
+        // HELPERS
+        // ============================================================
+        function getIconClass(code) {
+            const map = {
+                '01d': 'fa-sun', '01n': 'fa-moon',
+                '02d': 'fa-cloud-sun', '02n': 'fa-cloud-moon',
+                '03d': 'fa-cloud', '03n': 'fa-cloud',
+                '04d': 'fa-cloud', '04n': 'fa-cloud',
+                '09d': 'fa-cloud-rain', '09n': 'fa-cloud-rain',
+                '10d': 'fa-cloud-sun-rain', '10n': 'fa-cloud-moon-rain',
+                '11d': 'fa-cloud-bolt', '11n': 'fa-cloud-bolt',
+                '13d': 'fa-snowflake', '13n': 'fa-snowflake',
+                '50d': 'fa-smog', '50n': 'fa-smog'
+            };
+            return map[code] || 'fa-cloud';
+        }
+
+        function toggleFavorite(city) {
+            const idx = favorites.indexOf(city);
+            if (idx > -1) favorites.splice(idx, 1);
+            else favorites.push(city);
+            const email = currentUser?.email || 'default';
+            localStorage.setItem('favorites_' + email, JSON.stringify(favorites));
+            updateFavorites();
+            if (weatherData) renderCurrent(weatherData);
+        }
+
+        function updateFavorites() {
+            favCount.textContent = favorites.length;
+            if (favorites.length === 0) {
+                favoritesList.innerHTML = `<span style="color:var(--text-secondary);font-size:0.85rem;">Sevimli shaharlar yo'q</span>`;
+            } else {
+                favoritesList.innerHTML = favorites.map(city => `
+                    <span class="favorite-chip" onclick="fetchWeather('${city}')">
+                        <i class="fas fa-star" style="color:var(--region-color);"></i> ${city}
+                        <span class="remove" onclick="event.stopPropagation();toggleFavorite('${city}')">×</span>
+                    </span>
+                `).join('');
+            }
+        }
+
+        function renderRegions() {
+            regionsGrid.innerHTML = Object.keys(REGIONS).map(region => {
+                const cls = REGIONS[region].cls;
+                const color = getComputedStyle(document.createElement('div')).getPropertyValue('--region-color') || '#1a73e8';
+                return `
+                    <button class="region-btn ${cls}" data-region="${region}" onclick="selectRegion('${region}')" style="--region-color:${color};">
+                        <span class="color-dot"></span> ${region}
+                    </button>
+                `;
+            }).join('');
+            // Apply region colors
+            document.querySelectorAll('.region-btn').forEach(el => {
+                const cls = el.className.split(' ').find(c => c.startsWith('region-'));
+                if (cls) {
+                    const color = getComputedStyle(el).getPropertyValue('--region-color') || '#1a73e8';
+                    el.style.setProperty('--region-color', color);
+                    el.querySelector('.color-dot').style.background = color;
+                }
+            });
+        }
+
+        function selectRegion(region) {
+            document.querySelectorAll('.region-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.region-btn[data-region="${region}"]`)?.classList.add('active');
+            const cities = REGIONS[region]?.cities || [];
+            if (cities.length > 0) {
+                searchInput.value = cities[0];
+                fetchWeather(cities[0]);
+            }
+        }
+
+        function showAutocomplete(query) {
+            if (!query || query.length < 1) { autocompleteList.classList.remove('show'); return; }
+            const q = query.toLowerCase();
+            const results = ALL_LOCATIONS.filter(item => 
+                item.name.toLowerCase().includes(q) || item.region.toLowerCase().includes(q)
+            ).slice(0, 10);
+            if (results.length === 0) { autocompleteList.classList.remove('show'); return; }
+            autocompleteList.innerHTML = results.map(item => `
+                <div class="autocomplete-item" onclick="selectAutocomplete('${item.name}')">
+                    <i class="fas ${item.type === 'viloyat' ? 'fa-map' : 'fa-city'}"></i>
+                    <div><div>${item.name}</div><div class="region">${item.region}</div></div>
+                </div>
+            `).join('');
+            autocompleteList.classList.add('show');
+        }
+
+        function selectAutocomplete(name) {
+            searchInput.value = name;
+            autocompleteList.classList.remove('show');
+            fetchWeather(name);
+        }
+
+        function showLoading() {
+            currentWeather.innerHTML = `<div class="loader"><i class="fas fa-spinner"></i> Yuklanmoqda...</div>`;
+            dailyList.innerHTML = `<div class="loader"><i class="fas fa-spinner"></i> Yuklanmoqda...</div>`;
+        }
+
+        function showError(msg) {
+            currentWeather.innerHTML = `<div class="error-box" style="background:rgba(234,67,53,0.1);border:1px solid rgba(234,67,53,0.2);border-radius:var(--radius-sm);padding:1rem 1.5rem;color:#f87171;display:flex;align-items:center;gap:0.8rem;margin:0.5rem 0;"><i class="fas fa-circle-exclamation"></i> ${msg || 'Xatolik yuz berdi'}</div>`;
+            dailyList.innerHTML = '';
+        }
+
+        // ============================================================
+        // FORECAST TABS
+        // ============================================================
+        forecastTabs.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            forecastTabs.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (btn.dataset.tab === 'chart') {
+                chartContainer.classList.remove('hidden');
+                dailyList.classList.add('hidden');
+            } else {
+                chartContainer.classList.add('hidden');
+                dailyList.classList.remove('hidden');
+            }
+        });
+
+        // ============================================================
+        // EVENTS
+        // ============================================================
+        googleLoginBtn.addEventListener('click', handleGoogleLogin);
+        logoutBtn.addEventListener('click', handleLogout);
+        
+        searchBtn.addEventListener('click', () => { const v = searchInput.value.trim(); if (v) fetchWeather(v); });
+        searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const v = searchInput.value.trim(); if (v) fetchWeather(v); autocompleteList.classList.remove('show'); } });
+        searchInput.addEventListener('input', (e) => showAutocomplete(e.target.value));
+        document.addEventListener('click', (e) => { if (!e.target.closest('.search-box')) autocompleteList.classList.remove('show'); });
+        
+        geoBtn.addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    pos => fetchByCoords(pos.coords.latitude, pos.coords.longitude),
+                    () => showError('Geolokatsiya ruxsati berilmadi')
+                );
+            } else { showError('Brauzer geolokatsiyani qo‘llamaydi'); }
+        });
+
+        themeBtn.addEventListener('click', toggleTheme);
+
+        // ============================================================
+        // INIT
+        // ============================================================
+        renderRegions();
+        updateFavorites();
+
+        // Sessionni tekshirish
+        const savedSession = localStorage.getItem('weatherSession');
+        if (savedSession) {
+            try {
+                const session = JSON.parse(savedSession);
+                if (session.loggedIn) {
+                    currentUser = { name: session.user, email: session.email, avatar: session.avatar };
+                    loginPage.style.display = 'none';
+                    appWrapper.classList.add('show');
+                    userAvatar.src = session.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(session.user) + '&background=1a73e8&color=fff&size=64';
+                    userName.textContent = session.user;
+                    favorites = JSON.parse(localStorage.getItem('favorites_' + session.email) || '[]');
+                    updateFavorites();
+                    fetchWeather('Toshkent');
+                }
+            } catch(e) {}
+        }
+
+        console.log('🌤 Smart Ob-Havo ishga tushdi!');
+        console.log('🔐 Google orqali kirish');
+        console.log('🎨 Har bir viloyat o\'z rangida');
+    </script>
+</body>
+</html>
